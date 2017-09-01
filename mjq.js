@@ -3,11 +3,16 @@
  */
 
 (function (window, undefined) {
-    var version = '1.0.1';
+    var version = '1.0.1',
+        class2type = {},
+        toString = class2type.toString;
+
 
     function jQuery(selector) {
         return new jQuery.fn.init(selector);
     }
+
+    window.jQuery = window.$ = jQuery;
 
     jQuery.fn = jQuery.prototype = {
         constructor: jQuery,
@@ -51,7 +56,9 @@
         },
         push: [].push,
         sort: [].sort,
-        splice: [].splice
+        splice: [].splice,
+        filter: [].filter,
+        concat: [].concat
     }
 
     jQuery.extend = jQuery.fn.extend = function (obj) {
@@ -156,8 +163,28 @@
                         }
                     });
             }
+        },
+        // 数组空元素压缩
+        compact: function (array) {
+            return $.fn.filter.call(array, function (item) {
+                return item != null;
+            })
+        },
+        // 数组扁平化
+        flatten: function (array) {
+            return array.length ? $.fn.concat.apply([], array) : array;
+        },
+        type: function (obj) {
+            return obj == null ? String(obj) :
+                class2type[toString.call(obj)] || "object"
         }
     });
+
+    // Populate the class2type map
+    jQuery.each("Boolean Number String Function Array Date RegExp Object Error".split(" "), function (i, name) {
+        class2type["[object " + name + "]"] = name.toLowerCase();
+    })
+
 
     jQuery.fn.extend({
         empty: function () {
@@ -340,7 +367,7 @@
 
                     return getStyle(this[0], style);
 
-                } else if(jQuery.isObject(style)) {
+                } else if (jQuery.isObject(style)) {
 
                     for (var key in style) {
                         this.each(function () {
@@ -348,12 +375,12 @@
                         })
                     }
                 }
-            } else if(arguments.length >=2) {
-                this.each(function(){
-                  this['style'][style] = val;
+            } else if (arguments.length >= 2) {
+                this.each(function () {
+                    this['style'][style] = val;
                 })
             }
-            return this;     
+            return this;
 
             function getStyle(dom, key) {
                 // 优先新浏览器
@@ -407,7 +434,5 @@
     }
 
     init.prototype = jQuery.fn;
-
-    window.jQuery = window.$ = jQuery;
 
 })(window);
