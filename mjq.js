@@ -147,7 +147,9 @@
 
             return false;
         },
-
+        isPlainObject: function (obj) {
+            return jQuery.isObject(obj) && !jQuery.isWindow(obj) && Object.getPrototypeOf(obj) == Object.prototype
+        },
         ready: function (fn) {
             if (document.readyState === 'complete') {
                 fu();
@@ -186,6 +188,7 @@
     })
 
 
+    // dom操作
     jQuery.fn.extend({
         empty: function () {
             //   for (var i = 0, len = this.length; i < len; i++) //   {
@@ -390,7 +393,90 @@
                     return dom.currentStyle[key];
                 }
             }
-        }
+        },
+        val: function (value) {
+            /**
+             * 1.length=0就 返回第一个元素的value
+             * 2.否则遍历元素设置值
+             * 3.返回this
+             */
+            if (arguments.length === 0) {
+                return this[0].value;
+                //   return this.prop('value');
+            } else {
+                for (var i = 0; i < this.length; i++) {
+                    this[i].value = value;
+                }
+                //   this.each(function(){
+                //     this.value = value; 
+                //   })
+            }
+        },
+        hasClass: function (className) {
+            var has = false;
+            this.each(function () {
+                if ((" " + this.className + " ").indexOf(" " + className + " ") > -1) {
+                    has = true;
+                    return false;
+                };
+            })
+            return has;
+        },
+
+        addClass: function (className) {
+            var classNames = jQuery.trim(className).split(/\s+/);
+
+            this.each(function () {
+                var $self = jQuery(this);
+
+                jQuery.each(classNames, function (i, val) {
+                    if (!$self.hasClass(val)) {
+                        $self[0].className += ' ' + val;
+                    }
+                })
+
+            })
+
+            return this;
+        },
+        removeClass: function (className) {
+            if (arguments.length === 0) {
+                this.each(function () {
+                    this.className = '';
+                })
+            } else {
+                var classNames = jQuery.trim(className).split(/\s+/);
+
+                this.each(function () {
+                    var self = this;
+
+                    jQuery.each(classNames, function (i, val) {
+                        self.className = (' ' + self.className + ' ').replace(' ' + val + ' ', ' ');                        
+                    });
+                })
+
+            }
+
+            return this;
+        },
+        toggleClass: function (className) {
+            var classNames = jQuery.trim(className).split(/\s+/);      
+            
+            this.each(function () {
+                $self = jQuery(this);
+
+                jQuery.each(classNames, function (i, val) {
+                    if ($self.hasClass(val)) {
+                        $self.removeClass(val);
+                    } else {
+                        $self.addClass(val);
+                    }
+                })
+                
+            })
+            return this;
+        },
+
     });
 
 
