@@ -62,11 +62,24 @@
     }
 
     jQuery.extend = jQuery.fn.extend = function (obj) {
-        for (var key in obj) {
-            if (obj.hasOwnProperty(key)) {
-                this[key] = obj[key];
+        var target = arguments[0];
+
+        if (arguments.length === 1) {
+            target = this;
+            for (var key in arguments[0]) {
+                target[key] = obj[key];
             }
         }
+        else if (arguments.length >= 2) {
+            for (var i = 1; i < arguments.length; i++) {
+                for (var key in arguments[i]) {
+                    if (arguments[i].hasOwnProperty(key)) {
+                        target[key] = arguments[i][key];
+                    }
+                }
+            }
+        }
+        return target;
     }
 
     jQuery.extend({
@@ -556,7 +569,7 @@
             // this.each(function () {
             //     jQuery.removeEvent(this, type, fn);
             // })
-            
+
             /**
              * 1.遍历元素
              * 2.判断.$_event_cache有没有
@@ -576,13 +589,13 @@
                     //     self.$_event_cache[i] = [];                        
                     // })
                     for (var key in this.$_event_cache) {
-                            this.$_event_cache[key] = [];
+                        this.$_event_cache[key] = [];
                     }
                 } else if (argLen == 1) {
                     this.$_event_cache[type] = []
                 } else {
                     // 数组元素删除与序号递增的bug
-                    for (var i = this.$_event_cache[type].length -1 ; i >= 0 ; i--) {
+                    for (var i = this.$_event_cache[type].length - 1; i >= 0; i--) {
                         var val = this.$_event_cache[type][i];
                         if (val === fn) {
                             this.$_event_cache[type].splice(i, 1);
@@ -593,7 +606,7 @@
             });
             return this;
         },
-    
+
         // 暂时没有的兼容性代码
         // 获取事件
         getEvent: function (e) {
@@ -648,15 +661,108 @@
     });
 
     // 批量事件绑定
-    var eventNames =( "blur focus focusin focusout resize scroll click dblclick " +
-	"mousedown mouseup mousemove mouseover mouseout mouseenter mouseleave " +
-    "change select submit keydown keypress keyup contextmenu" ).split( " " );
-    
-    jQuery.each(eventNames, function(i ,eventName){
-       jQuery.fn[eventName] = function(fn){
-         return this.on(eventName, fn); 
-       }
+    var eventNames = ("blur focus focusin focusout resize scroll click dblclick " +
+        "mousedown mouseup mousemove mouseover mouseout mouseenter mouseleave " +
+        "change select submit keydown keypress keyup contextmenu").split(" ");
+
+    jQuery.each(eventNames, function (i, eventName) {
+        jQuery.fn[eventName] = function (fn) {
+            return this.on(eventName, fn);
+        }
     })
+
+    jQuery.extend({
+        ajaxSettings: {
+            url: location.href,
+            type: "GET",
+            async: true,
+            contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+            timeout: null,
+            success: function () { },
+            error: function () { },
+            complete: function () { }
+        },
+        urlStringify: function (data) {
+            var result = '', key;
+
+            if (!jQuery.isObject(data)) {
+                return result;
+            }
+
+            for (key in data) {
+                result += window.encodeURIComponent(key)  + '=' + window.encodeURIComponent(data[key]) + '&';
+            }
+
+            return result.slice(0, -1);
+        },
+        processOption: function(option){
+            var optionNew = {};
+            jQuery.extend(optionNew, jQuery.ajaxSettings, option);
+            optionNew.data = jQuery.urlStringify(optionNew.data);
+
+            optionNew.type = optionNew.type.toUpperCase();
+            if (optionNew.type === 'GET') {
+                optionNew.url += '?' +  optionNew.data;
+
+                optionNew.data = null;
+            }else{
+                
+            }
+
+            return optionNew;
+        },
+        ajax: function (option) {
+            var optionNew = {} ,xhr;
+            
+            optionNew =jQuery.processOption(option);
+
+            xhr = createXHR();	//返回了一个对象，这个对象IE6兼容。
+
+            xhr.open(optionNew.type, optionNew.url, optionNew.async);
+            
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    optionNew.complete();
+                    if (xhr.status >= 200 && xhr.status < 300 || xhr.status == 304) {
+                        optionNew.success(xhr.responseText);
+                    } else {
+                        optionNew.error(xhr.status);
+                    }
+                }
+            };
+            xhr.send(optionNew.data);
+
+
+            //闭包形式，因为这个函数只服务于ajax函数，所以放在里面
+            function createXHR() {
+                //本函数来自于《JavaScript高级程序设计 第3版》第21章
+                if (typeof XMLHttpRequest != "undefined") {
+                    return new XMLHttpRequest();
+                } else if (typeof ActiveXObject != "undefined") {
+                    if (typeof arguments.callee.activeXString != "string") {
+                        var versions = ["MSXML2.XMLHttp.6.0", "MSXML2.XMLHttp.3.0",
+                            "MSXML2.XMLHttp"
+                        ],
+                            i, len;
+
+                        for (i = 0, len = versions.length; i < len; i++) {
+                            try {
+                                new ActiveXObject(versions[i]);
+                                arguments.callee.activeXString = versions[i];
+                                break;
+                            } catch (ex) {
+                                //skip
+                            }
+                        }
+                    }
+
+                    return new ActiveXObject(arguments.callee.activeXString);
+                } else {
+                    throw new Error("No XHR object available.");
+                }
+            }
+        }
+    });
 
     var init = jQuery.fn.init = function (selector) {
         // null、undefined、NaN、0、false、''
