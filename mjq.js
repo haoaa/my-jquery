@@ -451,7 +451,7 @@
                     var self = this;
 
                     jQuery.each(classNames, function (i, val) {
-                        self.className = (' ' + self.className + ' ').replace(' ' + val + ' ', ' ');                        
+                        self.className = (' ' + self.className + ' ').replace(' ' + val + ' ', ' ');
                     });
                 })
 
@@ -460,8 +460,8 @@
             return this;
         },
         toggleClass: function (className) {
-            var classNames = jQuery.trim(className).split(/\s+/);      
-            
+            var classNames = jQuery.trim(className).split(/\s+/);
+
             this.each(function () {
                 $self = jQuery(this);
 
@@ -472,14 +472,191 @@
                         $self.addClass(val);
                     }
                 })
-                
+
             })
             return this;
         },
 
     });
 
+    // event utils
+    jQuery.extend({
+        addEvent: function (dom, type, fn) {
+            if (!dom.nodeType || !jQuery.isString(type) || !jQuery.isFunction(fn)) {
+                return;
+            }
+            //W3C版本 --火狐 谷歌 等大多数浏览器
+            if (dom.addEventListener) {
+                dom.addEventListener(type, fn, false);
+            } else if (dom.attachEvent) {
+                dom.attachEvent('on' + type, fn);
+            }
+        },
+        removeEvent: function (dom, type, fn) {
+            if (!dom.nodeType || !jQuery.isString(type) || !jQuery.isFunction(fn)) {
+                return;
+            }
+            //W3C版本 --火狐 谷歌 等大多数浏览器
+            if (dom.removeEventListener) {
+                dom.removeEventListener(type, fn);
+            } else if (dom.detachEvent) {
+                dom.detachEvent('on' + type, fn);
+            }
+        },
+        addEvent2: function (dom, type, fn) {
+            for (var i = 0; i < dom.clickCache.length; i++) {
+                dom.clickCache[i], call(dom, arguments);
+            }
+        }
+    });
 
+    jQuery.fn.extend({
+        on: function (type, fn) {
+            //普通绑定的问题: this指向window,ie8执行顺序问题
+            // this.each(function(){
+            //   jQuery.addEvent(this, type, fn); 
+            // })
+            // return this;
+
+            /** 
+             * 完整版思路
+             * 1.遍历所有元素
+             * 2.判断每一个元素有没有$_event_cache
+             * 3.如果有继续,没有初始化一个对象
+             * 4.继续判断有没有对应事件类型的数组
+             * 5.如果没有,说明第一次绑定改类型事件
+             *  5.1.那么给$_event_cache以type为key添加一个数组
+             *  5.2.然后把传入的回调push进去
+             *  5.3.最后绑定对应事件
+             *  5.4.事件回调里遍历对应的事件数组
+             *  5.5.执行时绑定this,和传入事件对象e
+             * 6.如果有,直接把传入的回调push到对应的事件数组
+             * 7.返回this
+             */
+
+            this.each(function () {
+                var self = this;
+                this.$_event_cache = this.$_event_cache || {};
+
+                if (!this.$_event_cache[type]) {
+                    this.$_event_cache[type] = [];
+                    this.$_event_cache[type].push(fn);
+                    jQuery.addEvent(this, type, function (e) {
+                        for (var i = 0; i < self.$_event_cache[type].length; i++) {
+                            self.$_event_cache[type][i].call(self, e);
+                        }
+                    })
+                } else {
+                    this.$_event_cache[type].push(fn);
+                }
+            });
+            return this;
+        },
+        off: function (type, fn) {
+            // this.each(function () {
+            //     jQuery.removeEvent(this, type, fn);
+            // })
+
+            var argLen = arguments.length;
+
+            this.each(function () {
+                var self = this;
+                if (!this.$_event_cache) return;
+
+                if (argLen === 0) {
+                    // jQuery.each(this.$_event_cache, function (i, val) {
+                    //     self.$_event_cache[i] = [];                        
+                    // })
+                    // debugger
+                    for (var key in this.$_event_cache) {
+                            this.$_event_cache[key] = null;
+                    }
+                } else if (argLen == 1) {
+                    this.$_event_cache[type] = []
+                } else {
+                    for (var i = this.$_event_cache[type].length -1 ; i >= 0 ; i--) {
+                        var val = this.$_event_cache[type][i];
+                        if (val === fn) {
+                            this.$_event_cache[type].splice(i, 1);
+                            break;
+                        }
+                    }
+                }
+            });
+            return this;
+        },
+        //单击事件
+        click: function (id, fn) {
+            this.on(id, 'click', fn);
+        },
+        //鼠标移入事件
+        mouseover: function (id, fn) {
+            this.on(id, 'mouseover', fn);
+        },
+        //鼠标移出事件
+        mouseout: function (id, fn) {
+            this.on(id, 'mouseout', fn);
+        },
+        //鼠标悬停事件
+        hover: function (id, fnOver, fnOut) {
+            if (fnOver) {
+                this.on(id, 'mouseover', fnOver);
+            }
+            if (fnOut) {
+                this.on(id, 'mouseout', fnOut);
+            }
+        },
+        //获取事件
+        getEvent: function (e) {
+            return e ? e : window.event;
+        },
+        //获取事件源
+        getTarget: function (e) {
+            var event = this.getEvent(e);
+            return event.target || event.srcElement;
+        },
+        //组织默认行为
+        preventDefault: function (event) {
+            var event = _$.getEvent(event);
+            if (event.preventDefault) {
+                event.preventDefault();
+            } else {
+                event.returnValue = false;
+            }
+        },
+        //阻止冒泡
+        stopPropagation: function (event) {
+            var event = _$.getEvent(event);
+            if (event.stopPropagation) {
+                event.stopPropagation();
+            } else {
+                event.cancelBubble = true;
+            }
+        },
+        //事件委托
+        /**
+         @para parentId 包裹容器的id
+         @para selector 容器内元素的选择器，支持id和className
+         @para fn 元素上要执行的函数
+         */
+        delegate: function (pid, eventType, selector, fn) {
+            //参数处理
+            var parent = this.$id(pid);
+            function handle(e) {
+                var target = _$.getTarget(e);
+                console.log(target.nodeName)
+                if (target.nodeName.toLowerCase() === selector || target.id === selector || target.className.indexOf(selector) != -1) {
+                    // 在事件冒泡的时候，回以此遍历每个子孙后代，如果找到对应的元素，则执行如下函数
+                    // 为什么使用call，因为call可以改变this指向
+                    // 大家还记得，函数中的this默认指向window，而我们希望指向当前dom元素本身
+                    fn.call(target, e);
+                }
+            }
+            //当我们给父亲元素绑定一个事件，他的执行顺序：先捕获到目标元素，然后事件再冒泡
+            //这里是是给元素对象绑定一个事件
+            parent[eventType] = handle;
+        }
+    });
 
     var init = jQuery.fn.init = function (selector) {
         // null、undefined、NaN、0、false、''

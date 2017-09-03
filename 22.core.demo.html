@@ -24,6 +24,25 @@
         $(function () {
             console.log($('li'));
 
+            // test event
+            var clickHandler =function(){
+              alert('li click') 
+            }
+            // $('li').on('click', clickHandler);
+            // $('li').off('click', clickHandler);
+
+            // IE8 compatible
+            $('li').on('click',function(e){
+               console.log(this );
+               console.log( e);
+            }).on('click',function(e){
+               console.log('学校',this );
+               console.log('学校', e);
+            })
+
+            setTimeout(function(){               
+                $('li').off()
+            },3000)
         })
     </script>
 </body>
