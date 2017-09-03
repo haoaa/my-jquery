@@ -556,7 +556,15 @@
             // this.each(function () {
             //     jQuery.removeEvent(this, type, fn);
             // })
-
+            
+            /**
+             * 1.遍历元素
+             * 2.判断.$_event_cache有没有
+             * 3.判断有没有参数,没传就清空$_event_cache里面所有数组
+             * 4.如果传1个参数就清空改类型的数组
+             * 5.两个就删除对应类型事件的回调
+             * 6.返回this
+             */
             var argLen = arguments.length;
 
             this.each(function () {
@@ -567,13 +575,13 @@
                     // jQuery.each(this.$_event_cache, function (i, val) {
                     //     self.$_event_cache[i] = [];                        
                     // })
-                    // debugger
                     for (var key in this.$_event_cache) {
-                            this.$_event_cache[key] = null;
+                            this.$_event_cache[key] = [];
                     }
                 } else if (argLen == 1) {
                     this.$_event_cache[type] = []
                 } else {
+                    // 数组元素删除与序号递增的bug
                     for (var i = this.$_event_cache[type].length -1 ; i >= 0 ; i--) {
                         var val = this.$_event_cache[type][i];
                         if (val === fn) {
@@ -585,28 +593,9 @@
             });
             return this;
         },
-        //单击事件
-        click: function (id, fn) {
-            this.on(id, 'click', fn);
-        },
-        //鼠标移入事件
-        mouseover: function (id, fn) {
-            this.on(id, 'mouseover', fn);
-        },
-        //鼠标移出事件
-        mouseout: function (id, fn) {
-            this.on(id, 'mouseout', fn);
-        },
-        //鼠标悬停事件
-        hover: function (id, fnOver, fnOut) {
-            if (fnOver) {
-                this.on(id, 'mouseover', fnOver);
-            }
-            if (fnOut) {
-                this.on(id, 'mouseout', fnOut);
-            }
-        },
-        //获取事件
+    
+        // 暂时没有的兼容性代码
+        // 获取事件
         getEvent: function (e) {
             return e ? e : window.event;
         },
@@ -657,6 +646,17 @@
             parent[eventType] = handle;
         }
     });
+
+    // 批量事件绑定
+    var eventNames =( "blur focus focusin focusout resize scroll click dblclick " +
+	"mousedown mouseup mousemove mouseover mouseout mouseenter mouseleave " +
+    "change select submit keydown keypress keyup contextmenu" ).split( " " );
+    
+    jQuery.each(eventNames, function(i ,eventName){
+       jQuery.fn[eventName] = function(fn){
+         return this.on(eventName, fn); 
+       }
+    })
 
     var init = jQuery.fn.init = function (selector) {
         // null、undefined、NaN、0、false、''
