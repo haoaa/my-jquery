@@ -25,27 +25,44 @@
             console.log($('li'));
 
             // test event
-            var clickHandler =function(){
-              alert('li click') 
+            var clickHandler = function () {
+                alert('li click')
             }
             // $('li').on('click', clickHandler);
             // $('li').off('click', clickHandler);
 
             // IE8 compatible
-            $('li').on('click',function(e){
-               console.log(this );
-               console.log( e);
-            }).on('click',function(e){
-               console.log('学校',this );
-               console.log('学校', e);
+            $('li').on('click', function (e) {
+                console.log(this);
+                console.log(e);
+            }).on('click', function (e) {
+                console.log('学校', this);
+                console.log('学校', e);
             })
 
-            setTimeout(function(){               
+            setTimeout(function () {
                 $('li').off()
-                $('span').click(function(){
-                  console.log('llllllllllllllll'); 
+                $('span').click(function () {
+                    console.log('llllllllllllllll');
                 })
-            },3000)
+            }, 3000)
+
+            /**
+             * ajax test
+             */
+            // $.ajax({
+            //     url: './test.jso2n',
+            //     data: {
+            //         addresss: '站西路',
+            //         tel: 3434443
+            //     },
+            //     success: function (data) {
+            //         console.log(data);
+            //     },
+            //     error: function (data) {
+            //         console.log(data);
+            //     }
+            // })
 
         })
     </script>
