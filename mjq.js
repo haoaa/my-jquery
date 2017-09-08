@@ -677,6 +677,7 @@
             type: "GET",
             async: true,
             contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+            dataType: 'JSON',
             timeout: null,
             success: function () { },
             error: function () { },
@@ -690,46 +691,81 @@
             }
 
             for (key in data) {
-                result += window.encodeURIComponent(key)  + '=' + window.encodeURIComponent(data[key]) + '&';
+                result += window.encodeURIComponent(key) + '=' + window.encodeURIComponent(data[key]) + '&';
             }
 
             return result.slice(0, -1);
         },
-        processOption: function(option){
+        processOption: function (option) {
             var optionNew = {};
             jQuery.extend(optionNew, jQuery.ajaxSettings, option);
+
             optionNew.data = jQuery.urlStringify(optionNew.data);
 
             optionNew.type = optionNew.type.toUpperCase();
-            if (optionNew.type === 'GET') {
-                optionNew.url += '?' +  optionNew.data;
 
+            if (optionNew.type === 'GET') {
+                optionNew.url += '?' + optionNew.data;
                 optionNew.data = null;
-            }else{
-                
             }
 
             return optionNew;
         },
         ajax: function (option) {
-            var optionNew = {} ,xhr;
-            
-            optionNew =jQuery.processOption(option);
+            var optionNew = {}, xhr, result, timer;
+
+            optionNew = jQuery.processOption(option);
 
             xhr = createXHR();	//返回了一个对象，这个对象IE6兼容。
 
             xhr.open(optionNew.type, optionNew.url, optionNew.async);
-            
+
+            if (optionNew.type === 'POST') {
+                xhr.setRequestHeader("Content-Type", optionNew.contentType);
+            }
             xhr.onreadystatechange = function () {
                 if (xhr.readyState === 4) {
+
+                    clearTimeout(timer);
+
                     optionNew.complete();
                     if (xhr.status >= 200 && xhr.status < 300 || xhr.status == 304) {
-                        optionNew.success(xhr.responseText);
+
+                        //eval和Function有安全隐患,会执行字符串代码, JSON.parse只会解析
+                        switch (optionNew.dataType) {
+                            case 'JSON':
+                                try {
+                                    result = JSON.parse(xhr.responseText);
+                                } catch (error) {
+                                    result = error;
+                                }
+                                break;
+                            case 'script':
+                                eval(xhr.responseText);
+                                result = xhr.responseText;
+                                break;
+                            case 'style':
+                                $('<style></style>').html(xhr.responseText).appendTo('head');
+                                break;
+                            default:
+                                result = xhr.responseText;
+                                break;
+                        }
+                        optionNew.success(result);
                     } else {
                         optionNew.error(xhr.status);
                     }
                 }
             };
+
+            if (optionNew.timeout) {
+                timer = setTimeout(function(){
+                  optionNew.error('超时') ;
+                  // abort callback   
+                  xhr.onreadystatechange =null;
+                },optionNew.timeout);
+            }
+
             xhr.send(optionNew.data);
 
 
@@ -761,6 +797,15 @@
                     throw new Error("No XHR object available.");
                 }
             }
+        },
+        get : function(url, data , fn){
+          fn = fn || data || function(){};
+          
+          jQuery.ajax({
+              url:url,
+              data: data,
+              success:fn
+          })
         }
     });
 

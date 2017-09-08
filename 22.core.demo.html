@@ -50,19 +50,22 @@
             /**
              * ajax test
              */
-            // $.ajax({
-            //     url: './test.jso2n',
-            //     data: {
-            //         addresss: '站西路',
-            //         tel: 3434443
-            //     },
-            //     success: function (data) {
-            //         console.log(data);
-            //     },
-            //     error: function (data) {
-            //         console.log(data);
-            //     }
-            // })
+            $.ajax({
+                url: './test.json',
+                type: 'get',
+                dataType: 'style',
+                // timeout:1,
+                data: {
+                    addresss: '站西路',
+                    tel: 3434443
+                },
+                success: function (data) {
+                    console.log(data);
+                },
+                error: function (data) {
+                    console.log(data);
+                }
+            })
 
         })
     </script>
